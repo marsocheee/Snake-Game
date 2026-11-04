@@ -63,7 +63,7 @@ flex-direction: column;
 padding: clamp(16px, 4vw, 24px);
 opacity: 0;
 pointer-events: none;
-transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+transition: opacity 0.3s ease, transform 0.3s ease;
 transform: scale(0.96);
 z-index: 1;
 }
@@ -104,7 +104,6 @@ background: linear-gradient(135deg, #ffffff, var(--green));
 -webkit-background-clip: text;
 background-clip: text;
 color: transparent;
-text-shadow: 0 0 30px rgba(57, 255, 136, 0.2);
 }
 ​.subtitle {
 font-size: clamp(13px, 3.5vw, 15px);
@@ -164,9 +163,6 @@ letter-spacing: 1px;
 width: 100%;
 max-width: 280px;
 }
-​.btn-primary:hover {
-box-shadow: 0 10px 35px rgba(57, 255, 136, 0.5);
-}
 ​.btn-secondary {
 background: rgba(255, 255, 255, 0.06);
 color: var(--text);
@@ -206,7 +202,6 @@ border: 1px solid rgba(57, 255, 136, 0.18);
 border-radius: 14px;
 padding: 8px 12px;
 text-align: center;
-backdrop-filter: blur(8px);
 }
 ​.score-card .label {
 font-size: 10px;
@@ -245,7 +240,7 @@ min-height: 0;
 background: #04100c;
 border: 2px solid rgba(57, 255, 136, 0.4);
 border-radius: 16px;
-box-shadow: 0 0 35px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0,0,0,0.8);
+box-shadow: 0 0 35px rgba(0, 0, 0, 0.6);
 display: block;
 touch-action: none;
 max-width: 100%;
@@ -258,7 +253,7 @@ inset: 0;
 margin: auto;
 width: 80%;
 height: fit-content;
-background: rgba(7, 27, 22, 0.92);
+background: rgba(7, 27, 22, 0.95);
 border: 1px solid var(--green);
 padding: 20px;
 border-radius: 16px;
@@ -266,12 +261,10 @@ color: var(--green);
 font-size: 16px;
 font-weight: 700;
 text-align: center;
-box-shadow: 0 15px 40px rgba(0,0,0,0.8);
 pointer-events: none;
 opacity: 0;
 transform: scale(0.9);
-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-backdrop-filter: blur(6px);
+transition: all 0.2s ease;
 z-index: 5;
 white-space: pre-line;
 }
@@ -292,7 +285,7 @@ flex-shrink: 0;
 }
 ​.controls .btn-dir {
 height: 54px;
-background: linear-gradient(135deg, rgba(57,255,136,0.12), rgba(57,255,136,0.04));
+background: rgba(57, 255, 136, 0.1);
 border: 1px solid rgba(57, 255, 136, 0.25);
 color: var(--green);
 font-size: 22px;
@@ -312,21 +305,14 @@ align-items: center;
 text-align: center;
 gap: 24px;
 background: rgba(7, 27, 22, 0.95);
-backdrop-filter: blur(12px);
 }
 ​.go-emoji {
 font-size: 70px;
-animation: pulse 1.5s infinite;
-}
-​@keyframes pulse {
-0%, 100% { transform: scale(1); }
-50% { transform: scale(1.1); }
 }
 ​.go-title {
 font-size: clamp(28px, 8vw, 38px);
 font-weight: 900;
 color: var(--red);
-text-shadow: 0 0 25px rgba(255, 68, 85, 0.4);
 letter-spacing: 2px;
 }
 ​.go-scores {
@@ -359,23 +345,11 @@ gap: 12px;
 width: 100%;
 max-width: 260px;
 }
-​/* ---------- PAYSAGE ---------- */
-@media (max-height: 550px) and (orientation: landscape) {
+​@media (max-height: 550px) and (orientation: landscape) {
 .app { max-width: 100%; }
-#game {
-flex-direction: row;
-align-items: center;
-}
-.game-header {
-flex-direction: column;
-width: 110px;
-height: 100%;
-justify-content: center;
-}
-.controls {
-width: 180px;
-grid-template-columns: repeat(3, 1fr);
-}
+#game { flex-direction: row; align-items: center; }
+.game-header { flex-direction: column; width: 110px; height: 100%; justify-content: center; }
+.controls { width: 180px; grid-template-columns: repeat(3, 1fr); }
 .controls .btn-dir { height: 44px; }
 }
 </style>
@@ -449,32 +423,25 @@ Glisse ton doigt ou utilise le clavier pour diriger le serpent.
 </div>
 ​</div>
 ​<script>
-/* =========================================================
-SNAKE GAME PRO — Moteur de Jeu & Audio Web
-========================================================= */
-​const canvas = document.getElementById("canvas");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const messageEl = document.getElementById("message");
-​// Configuration Grille
-const GRID_SIZE = 20;
+​const GRID_SIZE = 20;
 let cellSize = 20;
-​// État du Jeu
-let snake = [];
+​let snake = [];
 let food = { x: 0, y: 0 };
 let direction = "RIGHT";
 let nextDirection = "RIGHT";
 let score = 0;
-let speed = 120; // ms par frame de jeu
+let speed = 120;
 let running = false;
 let paused = false;
 let lastRenderTime = 0;
 let accumulator = 0;
-​// Options & Paramètres Sauvegardés
-let soundEnabled = JSON.parse(localStorage.getItem("snakeSound") ?? "true");
+​let soundEnabled = JSON.parse(localStorage.getItem("snakeSound") ?? "true");
 let vibrateEnabled = JSON.parse(localStorage.getItem("snakeVibrate") ?? "true");
 let best = Number(localStorage.getItem("snakeBest")) || 0;
-​// Synthetiseur audio Web Audio API (aucun fichier externe requis)
-const AudioContext = window.AudioContext || window.webkitAudioContext;
+​const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 ​function initAudio() {
 if (!audioCtx) {
@@ -516,8 +483,7 @@ if (vibrateEnabled && "vibrate" in navigator) {
 try { navigator.vibrate(ms); } catch (e) {}
 }
 }
-​// Initialisation UI Options
-function updateSettingsUI() {
+​function updateSettingsUI() {
 const sBtn = document.getElementById("soundToggle");
 const vBtn = document.getElementById("vibrateToggle");
 ​sBtn.classList.toggle("active", soundEnabled);
@@ -537,9 +503,9 @@ vibrateEnabled = !vibrateEnabled;
 localStorage.setItem("snakeVibrate", JSON.stringify(vibrateEnabled));
 updateSettingsUI();
 }
-​/* ---------- RESPONSIVITÉ ET HDPI CANVAS ---------- */
-function resizeCanvas() {
+​function resizeCanvas() {
 const wrap = canvas.parentElement;
+if (!wrap) return;
 const rect = wrap.getBoundingClientRect();
 const size = Math.floor(Math.min(rect.width, rect.height));
 const dpr = window.devicePixelRatio || 1;
@@ -552,8 +518,7 @@ cellSize = canvas.width / GRID_SIZE;
 ​if (running || paused) draw();
 }
 ​window.addEventListener("resize", resizeCanvas);
-​/* ---------- GESTION DU JEU ---------- */
-function showScreen(id) {
+​function showScreen(id) {
 document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
@@ -628,8 +593,7 @@ if (newDir === "DOWN" && direction !== "UP") nextDirection = "DOWN";
 if (newDir === "LEFT" && direction !== "RIGHT") nextDirection = "LEFT";
 if (newDir === "RIGHT" && direction !== "LEFT") nextDirection = "RIGHT";
 }
-​/* ---------- BOUCLE PRINCIPALE (REQUESTANIMATIONFRAME) ---------- */
-function gameLoop(currentTime) {
+​function gameLoop(currentTime) {
 if (!running || paused) return;
 ​const deltaTime = currentTime - lastRenderTime;
 lastRenderTime = currentTime;
@@ -649,8 +613,7 @@ if (direction === "DOWN") head.y++;
 if (direction === "LEFT") head.x--;
 if (direction === "RIGHT") head.x++;
 ​const isEating = head.x === food.x && head.y === food.y;
-​// Collision murs ou serpent
-if (
+​if (
 head.x < 0 || head.y < 0 ||
 head.x >= GRID_SIZE || head.y >= GRID_SIZE ||
 snake.some(p => p.x === head.x && p.y === head.y)
@@ -670,19 +633,16 @@ localStorage.setItem("snakeBest", best);
 document.getElementById("best").textContent = best;
 }
 ​food = createFood();
-​// Accélération progressive
-if (speed > 60) {
+​if (speed > 60) {
 speed -= 2;
 }
 } else {
 snake.pop();
 }
 }
-​/* ---------- RENDU GRAPHIQUE HIGH QUALITY ---------- */
-function draw() {
+​function draw() {
 ctx.clearRect(0, 0, canvas.width, canvas.height);
-​// Grille de fond moderne
-ctx.strokeStyle = "rgba(57, 255, 136, 0.05)";
+​ctx.strokeStyle = "rgba(57, 255, 136, 0.05)";
 ctx.lineWidth = 1;
 for (let i = 0; i <= GRID_SIZE; i++) {
 ctx.beginPath();
@@ -694,8 +654,7 @@ ctx.moveTo(0, i * cellSize);
 ctx.lineTo(canvas.width, i * cellSize);
 ctx.stroke();
 }
-​// Nourriture (Effet Pomme lumineuse)
-const foodRadius = (cellSize / 2) * 0.75;
+​const foodRadius = (cellSize / 2) * 0.75;
 const foodCenterX = food.x * cellSize + cellSize / 2;
 const foodCenterY = food.y * cellSize + cellSize / 2;
 ​ctx.save();
@@ -706,8 +665,7 @@ ctx.beginPath();
 ctx.arc(foodCenterX, foodCenterY, foodRadius, 0, Math.PI * 2);
 ctx.fill();
 ctx.restore();
-​// Serpent avec dégradé et coins arrondis
-snake.forEach((part, index) => {
+​snake.forEach((part, index) => {
 const x = part.x * cellSize + 1.5;
 const y = part.y * cellSize + 1.5;
 const size = cellSize - 3;
@@ -722,10 +680,13 @@ ctx.fillStyle = "#39ff88";
 ctx.shadowBlur = 0;
 }
 ​ctx.beginPath();
+if (ctx.roundRect) {
 ctx.roundRect(x, y, size, size, radius);
+} else {
+ctx.rect(x, y, size, size);
+}
 ctx.fill();
-​// Yeux sur la tête
-if (index === 0) {
+​if (index === 0) {
 ctx.fillStyle = "#041c13";
 const eyeOffset = size / 4;
 const eyeSize = size / 6;
@@ -759,8 +720,7 @@ document.getElementById("goBest").textContent = best;
 ​showScreen("gameover");
 updateSettingsUI();
 }
-​/* ---------- CONTRÔLES TACTILES & CLAVIER ---------- */
-document.addEventListener("keydown", (e) => {
+​document.addEventListener("keydown", (e) => {
 const keys = {
 ArrowUp: "UP", ArrowDown: "DOWN",
 ArrowLeft: "LEFT", ArrowRight: "RIGHT",
@@ -779,8 +739,7 @@ pauseGame();
 goHome();
 }
 });
-​// Événements Swipe Tactile sur Canvas & App
-let touchStartX = 0;
+​let touchStartX = 0;
 let touchStartY = 0;
 ​window.addEventListener("touchstart", (e) => {
 touchStartX = e.touches[0].clientX;
@@ -799,14 +758,12 @@ changeDirection(dx > 0 ? "RIGHT" : "LEFT");
 changeDirection(dy > 0 ? "DOWN" : "UP");
 }
 }, { passive: true });
-​// Bloquer les gestes mobiles perturbateurs (pull-to-refresh, zoom)
-document.addEventListener("gesturestart", (e) => e.preventDefault());
+​document.addEventListener("gesturestart", (e) => e.preventDefault());
 document.addEventListener("touchmove", (e) => {
 if (running) e.preventDefault();
 }, { passive: false });
-​// Initialisation au chargement
-updateSettingsUI();
-resizeCanvas();
+​updateSettingsUI();
+setTimeout(resizeCanvas, 50);
 </script>
 ​</body>
 </html>
